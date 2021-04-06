@@ -27,7 +27,8 @@ $ certbot plugins --text
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 * dns-azure
-Description: BLAH
+Description: Obtain certificates using a DNS TXT record (if you are using Azure
+for DNS).
 Interfaces: IAuthenticator, IPlugin
 Entry point: dns-azure = certbot_dns_azure.dns_azure:Authenticator
 

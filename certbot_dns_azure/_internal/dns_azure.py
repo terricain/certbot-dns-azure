@@ -110,29 +110,38 @@ class Authenticator(dns_common.DNSAuthenticator):
         else:
             return MSIAuthentication()
 
-    def _get_ids_for_domain(self, domain):
+    def _get_ids_for_domain(self, domain: str):
         try:
-            rg = self.domain_zoneid[domain]
-            subscription_id = rg.split('/')[2]
-            rg_name = rg.split('/')[4]
-            return subscription_id, rg_name
-        except KeyError:
-            raise errors.PluginError('Domain {} does not have a valid domain to '
-                                     'resource group id mapping'.format(domain))
+            for azure_dns_domain, resource_group in self.domain_zoneid.items():
+                # Look to see if domain ends with key, to cover subdomains
+                if domain.endswith(azure_dns_domain):
+                    subscription_id = resource_group.split('/')[2]
+                    rg_name = resource_group.split('/')[4]
+                    return azure_dns_domain, subscription_id, rg_name
+            else:
+                raise errors.PluginError('Domain {} does not have a valid domain to '
+                                         'resource group id mapping'.format(domain))
         except IndexError:
             raise errors.PluginError('Domain {} has an invalid resource group id'.format(domain))
 
+    @staticmethod
+    def _get_relative_domain(fqdn: str, domain: str) -> str:
+        if fqdn == domain:
+            return '@'
+        return fqdn.replace(domain, '').strip('.')
+
     def _perform(self, domain, validation_name, validation):
-        subscription_id, resource_group_name = self._get_ids_for_domain(domain)
+        azure_domain, subscription_id, resource_group_name = self._get_ids_for_domain(domain)
         client = self._get_azure_client(subscription_id)
+        relative_validation_name = self._get_relative_domain(validation_name, azure_domain)
 
         # Check to see if there are any existing TXT validation record values
         txt_value = {validation}
         try:
             existing_rr = client.record_sets.get(
                 resource_group_name=resource_group_name,
-                zone_name=domain,
-                relative_record_set_name=validation_name,
+                zone_name=azure_domain,
+                relative_record_set_name=relative_validation_name,
                 record_type='TXT')
             for record in existing_rr.txt_records:
                 for value in record.value:
@@ -145,8 +154,8 @@ class Authenticator(dns_common.DNSAuthenticator):
         try:
             client.record_sets.create_or_update(
                 resource_group_name=resource_group_name,
-                zone_name=domain,
-                relative_record_set_name=validation_name,
+                zone_name=azure_domain,
+                relative_record_set_name=relative_validation_name,
                 record_type='TXT',
                 parameters=RecordSet(ttl=self.ttl, txt_records=[TxtRecord(value=list(txt_value))])
             )
@@ -158,14 +167,15 @@ class Authenticator(dns_common.DNSAuthenticator):
         if self.credential is None:
             self._setup_credentials()
 
-        subscription_id, resource_group_name = self._get_ids_for_domain(domain)
+        azure_domain, subscription_id, resource_group_name = self._get_ids_for_domain(domain)
+        relative_validation_name = self._get_relative_domain(validation_name, azure_domain)
         client = self._get_azure_client(subscription_id)
 
         txt_value = set()
         try:
             existing_rr = client.record_sets.get(resource_group_name=resource_group_name,
-                                                 zone_name=domain,
-                                                 relative_record_set_name=validation_name,
+                                                 zone_name=azure_domain,
+                                                 relative_record_set_name=relative_validation_name,
                                                  record_type='TXT')
             for record in existing_rr.txt_records:
                 for value in record.value:
@@ -181,8 +191,8 @@ class Authenticator(dns_common.DNSAuthenticator):
             if txt_value:
                 client.record_sets.create_or_update(
                     resource_group_name=resource_group_name,
-                    zone_name=domain,
-                    relative_record_set_name=validation_name,
+                    zone_name=azure_domain,
+                    relative_record_set_name=relative_validation_name,
                     record_type='TXT',
                     parameters=RecordSet(ttl=self.ttl,
                                          txt_records=[TxtRecord(value=list(txt_value))])
@@ -190,8 +200,8 @@ class Authenticator(dns_common.DNSAuthenticator):
             else:
                 client.record_sets.delete(
                     resource_group_name=resource_group_name,
-                    zone_name=domain,
-                    relative_record_set_name=validation_name,
+                    zone_name=azure_domain,
+                    relative_record_set_name=relative_validation_name,
                     record_type='TXT'
                 )
         except CloudError as err:

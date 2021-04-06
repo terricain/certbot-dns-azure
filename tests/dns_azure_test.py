@@ -26,6 +26,10 @@ SINGLE_DOMAIN = [
     achallenges.KeyAuthorizationAnnotatedChallenge(
         challb=acme_util.DNS01, domain='example.com', account_key=KEY),
 ]
+SUB_DOMAIN = [
+    achallenges.KeyAuthorizationAnnotatedChallenge(
+        challb=acme_util.DNS01, domain='a.b.example.com', account_key=KEY),
+]
 
 
 class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthenticatorTest):
@@ -80,8 +84,10 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         # Extract zone TXT record name and value
         zone1_req, zone2_req = MULTI_DOMAIN
         zone1_domain_name = zone1_req.validation_domain_name(zone1_req.domain)
+        zone1_relative_record = zone1_domain_name.replace('example.com', '').strip('.')
         zone1_key = zone1_req.validation(zone1_req.account_key)
         zone2_domain_name = zone2_req.validation_domain_name(zone2_req.domain)
+        zone2_relative_record = zone2_domain_name.replace('example.org', '').strip('.')
         zone2_key = zone2_req.validation(zone2_req.account_key)
 
         self.auth.perform(MULTI_DOMAIN)
@@ -94,13 +100,13 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         zone1_call, zone2_call = self.mock_client.record_sets.create_or_update.call_args_list
         self.assertEqual(zone1_call[1]['zone_name'], "example.com")
         self.assertEqual(zone1_call[1]['record_type'], "TXT")
-        self.assertEqual(zone1_call[1]['relative_record_set_name'], zone1_domain_name)
+        self.assertEqual(zone1_call[1]['relative_record_set_name'], zone1_relative_record)
         zone1_txt_records = zone1_call[1]['parameters'].txt_records
         self.assertEqual(len(zone1_txt_records), 1)
         self.assertEqual(zone1_txt_records[0].value[0], zone1_key)
 
         self.assertEqual(zone2_call[1]['zone_name'], "example.org")
-        self.assertEqual(zone2_call[1]['relative_record_set_name'], zone2_domain_name)
+        self.assertEqual(zone2_call[1]['relative_record_set_name'], zone2_relative_record)
         zone2_txt_records = zone2_call[1]['parameters'].txt_records
         self.assertEqual(len(zone2_txt_records), 1)
         self.assertEqual(zone2_txt_records[0].value[0], zone2_key)
@@ -113,6 +119,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         # Extract zone TXT record name and value
         zone1_req = SINGLE_DOMAIN[0]
         zone1_domain_name = zone1_req.validation_domain_name(zone1_req.domain)
+        zone1_relative_record = zone1_domain_name.replace('example.com', '').strip('.')
         zone1_key = zone1_req.validation(zone1_req.account_key)
 
         self.auth.perform(SINGLE_DOMAIN)
@@ -131,13 +138,38 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         zone1_call = self.mock_client.record_sets.create_or_update.call_args_list[0]
         self.assertEqual(zone1_call[1]['zone_name'], "example.com")
         self.assertEqual(zone1_call[1]['record_type'], "TXT")
-        self.assertEqual(zone1_call[1]['relative_record_set_name'], zone1_domain_name)
+        self.assertEqual(zone1_call[1]['relative_record_set_name'], zone1_relative_record)
         zone1_txt_records = zone1_call[1]['parameters'].txt_records
 
         self.assertEqual(len(zone1_txt_records), 1)
         txt_values = zone1_txt_records[0].value
         self.assertIn(zone1_key, txt_values)
         self.assertIn('someexistingkey', txt_values)
+
+    def test_perform_subdomain(self):
+        self.mock_client.record_sets.get.return_value = RecordSet(txt_records=[])
+
+        # Extract zone TXT record name and value
+        zone1_req = SUB_DOMAIN[0]
+        zone1_domain_name = zone1_req.validation_domain_name(zone1_req.domain)
+        zone1_key = zone1_req.validation(zone1_req.account_key)
+        # example.com is azure zone in config
+        relative_record = zone1_domain_name.replace('example.com', '').strip('.')
+
+        self.auth.perform(SUB_DOMAIN)
+
+        # Check azure client call counts
+        self.assertEqual(self.mock_client.record_sets.get.call_count, 1)
+        self.assertEqual(self.mock_client.record_sets.create_or_update.call_count, 1)
+
+        #
+        zone1_call = self.mock_client.record_sets.create_or_update.call_args_list[0]
+        self.assertEqual(zone1_call[1]['zone_name'], "example.com")
+        self.assertEqual(zone1_call[1]['record_type'], "TXT")
+        self.assertEqual(zone1_call[1]['relative_record_set_name'], relative_record)
+        zone1_txt_records = zone1_call[1]['parameters'].txt_records
+        self.assertEqual(len(zone1_txt_records), 1)
+        self.assertEqual(zone1_txt_records[0].value[0], zone1_key)
 
     def test_cleanup_multiple(self):
         self.mock_client.record_sets.get.return_value = RecordSet(txt_records=[])
@@ -146,6 +178,8 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         zone1_req, zone2_req = MULTI_DOMAIN
         zone1_domain_name = zone1_req.validation_domain_name(zone1_req.domain)
         zone2_domain_name = zone2_req.validation_domain_name(zone2_req.domain)
+        zone1_relative_record = zone1_domain_name.replace('example.com', '').strip('.')
+        zone2_relative_record = zone2_domain_name.replace('example.org', '').strip('.')
 
         # _attempt_cleanup | pylint: disable=protected-access
         self.auth._attempt_cleanup = True
@@ -158,11 +192,11 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         zone1_call, zone2_call = self.mock_client.record_sets.delete.call_args_list
         self.assertEqual(zone1_call[1]['zone_name'], "example.com")
         self.assertEqual(zone1_call[1]['record_type'], "TXT")
-        self.assertEqual(zone1_call[1]['relative_record_set_name'], zone1_domain_name)
+        self.assertEqual(zone1_call[1]['relative_record_set_name'], zone1_relative_record)
 
         self.assertEqual(zone2_call[1]['zone_name'], "example.org")
         self.assertEqual(zone2_call[1]['record_type'], "TXT")
-        self.assertEqual(zone2_call[1]['relative_record_set_name'], zone2_domain_name)
+        self.assertEqual(zone2_call[1]['relative_record_set_name'], zone2_relative_record)
 
     def test_cleanup_existing(self):
         self.mock_client.record_sets.get.return_value = RecordSet(txt_records=[
@@ -172,6 +206,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         # Extract zone TXT record name and value
         zone1_req = SINGLE_DOMAIN[0]
         zone1_domain_name = zone1_req.validation_domain_name(zone1_req.domain)
+        zone1_relative_record = zone1_domain_name.replace('example.com', '').strip('.')
         zone1_key = zone1_req.validation(zone1_req.account_key)
 
         # _attempt_cleanup | pylint: disable=protected-access
@@ -187,7 +222,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         zone1_call = self.mock_client.record_sets.create_or_update.call_args_list[0]
         self.assertEqual(zone1_call[1]['zone_name'], "example.com")
         self.assertEqual(zone1_call[1]['record_type'], "TXT")
-        self.assertEqual(zone1_call[1]['relative_record_set_name'], zone1_domain_name)
+        self.assertEqual(zone1_call[1]['relative_record_set_name'], zone1_relative_record)
         zone1_txt_records = zone1_call[1]['parameters'].txt_records
 
         self.assertEqual(len(zone1_txt_records), 1)
