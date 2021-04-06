@@ -4,11 +4,6 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-version = '0.1.0'
-
-# Remember to update local-oldest-requirements.txt when changing the minimum
-# acme/certbot version.
-#
 # azure-mgmt-dns is still the old style SDK, so will change dramatically
 # when they refactor, most notably the credential parts
 install_requires = [
@@ -38,7 +33,8 @@ docs_extras = [
 
 setup(
     name='certbot-dns-azure',
-    version=version,
+    use_scm_version=True,
+    setup_requires=['setuptools_scm'],
     description="Azure DNS Authenticator plugin for Certbot",
     long_description=long_description,
     long_description_content_type="text/markdown",
