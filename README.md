@@ -1,11 +1,11 @@
 certbot-dns-azure
-============
+=================
 
-![Tests](https://github.com/binkhq/certbot-dns-azure/workflows/Release/badge.svg)
+[![Tests](https://github.com/binkhq/certbot-dns-azure/workflows/Release/badge.svg)](https://github.com/binkhq/certbot-dns-azure/actions)
 [![Python Version](https://img.shields.io/pypi/pyversions/certbot-dns-azure)](https://pypi.org/project/certbot-dns-azure/)
 [![PyPi Status](https://img.shields.io/pypi/status/certbot-dns-azure)](https://pypi.org/project/certbot-dns-azure/)
-[![Version](https://img.shields.io/github/v/release/binkhq/certbot-dns-azure)](https://pypi.org/project/certbot-dns-azure/)
-[![Docs](https://readthedocs.org/projects/pip/badge/?version=latest&style=flat)](https://certbot-dns-azure.readthedocs.io/en/latest/)
+[![Version](https://img.shields.io/pypi/v/certbot-dns-azure)](https://pypi.org/project/certbot-dns-azure/)
+[![Docs](https://readthedocs.org/projects/certbot-dns-azure/badge/?version=latest&style=flat)](https://certbot-dns-azure.readthedocs.io/en/latest/)
 
 AzureDNS Authenticator plugin for [Certbot](https://certbot.eff.org/).
 
