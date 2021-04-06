@@ -17,6 +17,9 @@ install_requires = [
     'zope.interface',
 ]
 
+with open("README.md") as f:
+    long_description = f.read()
+
 if not os.environ.get('SNAP_BUILD'):
     install_requires.extend([
         'acme>=0.29.0',
@@ -37,6 +40,8 @@ setup(
     name='certbot-dns-azure',
     version=version,
     description="Azure DNS Authenticator plugin for Certbot",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     url='https://github.com/binkhq/certbot-dns-azure',
     author="Terry Cain",
     author_email='opensource@bink.com',
