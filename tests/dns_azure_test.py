@@ -1,4 +1,4 @@
-"""Tests for certbot_dns_cloudflare._internal.dns_cloudflare."""
+"""Tests for certbot_dns_azure._internal.dns_azure."""
 
 import unittest
 

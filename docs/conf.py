@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# certbot-dns-cloudflare documentation build configuration file, created by
+# certbot-dns-azure documentation build configuration file, created by
 # sphinx-quickstart on Tue May  9 10:20:04 2017.
 #
 # This file is execfile()d with the current directory set to its
