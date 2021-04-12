@@ -106,6 +106,7 @@ To run in a non-interactive manner:
 
 .. code-block:: bash
    :caption: Non-interactive
+   
    certbot certonly \\
      --authenticator dns-azure \\
      --preferred-challenges dns \\
