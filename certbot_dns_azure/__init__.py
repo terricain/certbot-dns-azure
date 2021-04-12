@@ -113,6 +113,6 @@ To run in a non-interactive manner:
      --noninteractive \\
      --agree-tos \\
      --dns-azure-config ~/.secrets/certbot/azure.ini \\
-     -d example.com```
+     -d example.com
 
 """
