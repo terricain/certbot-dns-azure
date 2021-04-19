@@ -5,8 +5,8 @@ from typing import Dict
 import zope.interface
 from azure.mgmt.dns import DnsManagementClient
 from azure.mgmt.dns.models import RecordSet, TxtRecord
-from azure.identity import ClientSecretCredential
 from azure.core.exceptions import HttpResponseError
+from azure.identity import ClientSecretCredential
 from msrestazure.azure_active_directory import MSIAuthentication
 
 from certbot import errors
