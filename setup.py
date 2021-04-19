@@ -7,7 +7,9 @@ from setuptools import setup
 # azure-mgmt-dns is still the old style SDK, so will change dramatically
 # when they refactor, most notably the credential parts
 install_requires = [
-    'azure-mgmt-dns>=3.0.0',
+    'azure-identity==1.5.0',
+    'azure-mgmt-dns>=8.0.0',
+    'msrestazure==0.6.4',
     'setuptools>=39.0.1',
     'zope.interface',
 ]

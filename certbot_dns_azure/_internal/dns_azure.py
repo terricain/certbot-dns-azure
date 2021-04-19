@@ -5,8 +5,8 @@ from typing import Dict
 import zope.interface
 from azure.mgmt.dns import DnsManagementClient
 from azure.mgmt.dns.models import RecordSet, TxtRecord
-from azure.common.exceptions import CloudError
-from azure.common.credentials import ServicePrincipalCredentials
+from azure.identity import ClientSecretCredential
+from azure.core.exceptions import HttpResponseError
 from msrestazure.azure_active_directory import MSIAuthentication
 
 from certbot import errors
@@ -97,13 +97,13 @@ class Authenticator(dns_common.DNSAuthenticator):
         )
 
     @staticmethod
-    def _get_azure_credentials(client_id=None, client_secret=None, tenant=None, msi_client_id=None):
-        has_sp = all((client_id, client_secret, tenant))
+    def _get_azure_credentials(client_id=None, client_secret=None, tenant_id=None, msi_client_id=None):
+        has_sp = all((client_id, client_secret, tenant_id))
         if has_sp:
-            return ServicePrincipalCredentials(
+            return ClientSecretCredential(
                 client_id=client_id,
-                secret=client_secret,
-                tenant=tenant
+                client_secret=client_secret,
+                tenant_id=tenant_id
             )
         elif msi_client_id:
             return MSIAuthentication(client_id=msi_client_id)
@@ -146,7 +146,7 @@ class Authenticator(dns_common.DNSAuthenticator):
             for record in existing_rr.txt_records:
                 for value in record.value:
                     txt_value.add(value)
-        except CloudError as err:
+        except HttpResponseError as err:
             if err.status_code != 404:  # Ignore RR not found
                 raise errors.PluginError('Failed to check TXT record for domain '
                                          '{}, error: {}'.format(domain, err))
@@ -159,7 +159,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                 record_type='TXT',
                 parameters=RecordSet(ttl=self.ttl, txt_records=[TxtRecord(value=list(txt_value))])
             )
-        except CloudError as err:
+        except HttpResponseError as err:
             raise errors.PluginError('Failed to add TXT record to domain '
                                      '{}, error: {}'.format(domain, err))
 
@@ -180,7 +180,7 @@ class Authenticator(dns_common.DNSAuthenticator):
             for record in existing_rr.txt_records:
                 for value in record.value:
                     txt_value.add(value)
-        except CloudError as err:
+        except HttpResponseError as err:
             if err.status_code != 404:  # Ignore RR not found
                 raise errors.PluginError('Failed to check TXT record for domain '
                                          '{}, error: {}'.format(domain, err))
@@ -204,7 +204,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                     relative_record_set_name=relative_validation_name,
                     record_type='TXT'
                 )
-        except CloudError as err:
+        except HttpResponseError as err:
             if err.status_code != 404:  # Ignore RR not found
                 raise errors.PluginError('Failed to remove TXT record for domain '
                                          '{}, error: {}'.format(domain, err))
