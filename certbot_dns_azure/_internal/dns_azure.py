@@ -6,8 +6,7 @@ import zope.interface
 from azure.mgmt.dns import DnsManagementClient
 from azure.mgmt.dns.models import RecordSet, TxtRecord
 from azure.core.exceptions import HttpResponseError
-from azure.identity import ClientSecretCredential
-from msrestazure.azure_active_directory import MSIAuthentication
+from azure.identity import ClientSecretCredential, ManagedIdentityCredential
 
 from certbot import errors
 from certbot import interfaces
@@ -106,9 +105,9 @@ class Authenticator(dns_common.DNSAuthenticator):
                 tenant_id=tenant_id
             )
         elif msi_client_id:
-            return MSIAuthentication(client_id=msi_client_id)
+            return ManagedIdentityCredential(client_id=msi_client_id)
         else:
-            return MSIAuthentication()
+            return ManagedIdentityCredential()
 
     def _get_ids_for_domain(self, domain: str):
         try:

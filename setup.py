@@ -9,7 +9,6 @@ from setuptools import setup
 install_requires = [
     'azure-identity>=1.5.0',
     'azure-mgmt-dns>=8.0.0',
-    'msrestazure>=0.6.4',
     'setuptools>=39.0.1',
     'zope.interface',
 ]
