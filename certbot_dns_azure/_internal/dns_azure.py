@@ -13,6 +13,7 @@ from certbot import interfaces
 from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)
+logging.getLogger('azure').setLevel(logging.WARNING)
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
