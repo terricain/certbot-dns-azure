@@ -14,6 +14,7 @@ Named Arguments
 ========================================  =====================================
 ``--dns-azure-config``                    Azure config INI file.
                                           (Required)
+``--dns-azure-credentials``               Alias for --dns-azure-config
 ========================================  =====================================
 
 

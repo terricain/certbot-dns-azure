@@ -37,6 +37,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
         super(Authenticator, cls).add_parser_arguments(add)
         add('config', help='Azure config INI file.')
+        add('credentials', help='Azure config INI file. Fallback for legacy integrations')
 
     def more_info(self):  # pylint: disable=missing-function-docstring
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
@@ -74,6 +75,10 @@ class Authenticator(dns_common.DNSAuthenticator):
                                      ''.format(credentials.confobj.filename))
 
     def _setup_credentials(self):
+        # Alias's dns-azure-credentials -> dns-azure-config
+        if self.config.namespace.dns_azure_credentials:
+            self.config.namespace.dns_azure_config = self.config.namespace.dns_azure_credentials
+
         valid_creds = self._configure_credentials(
             'config',
             'Azure config INI file',
