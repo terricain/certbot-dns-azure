@@ -6,7 +6,7 @@ import zope.interface
 from azure.mgmt.dns import DnsManagementClient
 from azure.mgmt.dns.models import RecordSet, TxtRecord
 from azure.core.exceptions import HttpResponseError
-from azure.identity import ClientSecretCredential, ManagedIdentityCredential
+from azure.identity import ClientSecretCredential, ManagedIdentityCredential, DefaultAzureCredential
 
 from certbot import errors
 from certbot import interfaces
@@ -14,6 +14,8 @@ from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)
 logging.getLogger('azure').setLevel(logging.WARNING)
+logging.getLogger('azure.identity').setLevel(logging.ERROR)  # noisy logging
+logging.getLogger('msal_extensions').setLevel(logging.CRITICAL)  # noisy logging
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
@@ -47,16 +49,9 @@ class Authenticator(dns_common.DNSAuthenticator):
         sp_client_id = credentials.conf('sp_client_id')
         sp_client_secret = credentials.conf('sp_client_secret')
         tenant_id = credentials.conf('tenant_id')
-        has_sp = all((sp_client_id, sp_client_secret, tenant_id))
 
         msi_client_id = credentials.conf('msi_client_id')
         msi_system_assigned = credentials.conf('msi_system_assigned')
-
-        if not any((has_sp, msi_system_assigned, msi_client_id)):
-            raise errors.PluginError('{}: No authentication methods have been '
-                                     'configured for Azure DNS. Either configure '
-                                     'a service principal or system/user assigned '
-                                     'managed identity'.format(credentials.confobj.filename))
 
         has_zone_mapping = any((key for key in credentials.confobj.keys() if 'azure_zone' in key))
 
@@ -113,7 +108,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         elif msi_client_id:
             return ManagedIdentityCredential(client_id=msi_client_id)
         else:
-            return ManagedIdentityCredential()
+            return DefaultAzureCredential()
 
     def _get_ids_for_domain(self, domain: str):
         try:

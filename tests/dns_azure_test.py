@@ -57,6 +57,10 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
                 'azure_msi_system_assigned': 'true',
                 'azure_zone1': 'example.com:/subscriptions/c135abce-d87d-48df-936c-15596c6968a5/resourceGroups/dns1',
                 'azure_zone2': 'example.org:/subscriptions/99800903-fb14-4992-9aff-12eaf2744622/resourceGroups/dns2'
+            }),
+            ('default_credential.ini', {
+                'azure_zone1': 'example.com:/subscriptions/c135abce-d87d-48df-936c-15596c6968a5/resourceGroups/dns1',
+                'azure_zone2': 'example.org:/subscriptions/99800903-fb14-4992-9aff-12eaf2744622/resourceGroups/dns2'
             })
         )
         for file, config in config_files:
@@ -229,13 +233,6 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         txt_values = zone1_txt_records[0].value
         self.assertNotIn(zone1_key, txt_values)
         self.assertIn('someexistingkey', txt_values)
-
-    def test_config_missing_auth(self):
-        # Test no auth info
-        dns_test_common.write({}, self.sp_config.azure_config)
-        with self.assertRaises(errors.PluginError) as cm:
-            self.auth.perform(SINGLE_DOMAIN)
-        self.assertIn('No authentication methods have been configured', cm.exception.args[0])
 
     def test_config_missing_zone_info(self):
         # Test missing mapping list

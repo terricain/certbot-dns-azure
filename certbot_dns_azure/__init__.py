@@ -24,16 +24,36 @@ Configuration
 Use of this plugin requires a configuration file containing Azure API
 credentials or information.
 
-This plugin supported API authentication using either Service Principals or
-utilising a Managed Identity assigned to the virtual machine.
+This plugin supports API authentication using Service Principals,
+Managed Identity (both system and user-assigned), or the
+`DefaultAzureCredential <https://docs.microsoft.com/en-us/python/api/azure-identity/azure.identity.defaultazurecredential?view=azure-python>`__
+chain.
 
-Regardless which authentication method used, the identity will need the
+Using the default Azure credential chain is the easiest and most flexible.
+The plugin will automatically use this if nothing else is configured in the INI
+config file. It will allow you to authenticate with any of the following:
+
+* A Service Principal configured by environment variables.
+* Managed Identity.
+* Tokens stored in a shared token cache.
+* Visual Studio Code.
+* Azure CLI.
+* Azure Powershell.
+
+Regardless of which authentication method is used, the identity will need the
 "DNS Zone Contributor" role assigned to it.
 
 As multiple Azure DNS Zones in multiple resource groups can exist, the config
 file needs a mapping of zone to resource group ID. Multiple zones -> ID mappings
 can be listed by using the key ``dns_azure_zoneX`` where X is a unique number.
 At least 1 zone mapping is required.
+
+.. code-block:: ini
+   :name: certbot_azure_default_credential.ini
+   :caption: Example config file using the default Azure credential chain:
+
+   dns_azure_zone1 = example.com:/subscriptions/c135abce-d87d-48df-936c-15596c6968a5/resourceGroups/dns1
+   dns_azure_zone2 = example.org:/subscriptions/99800903-fb14-4992-9aff-12eaf2744622/resourceGroups/dns2
 
 .. code-block:: ini
    :name: certbot_azure_service_principal.ini
