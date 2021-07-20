@@ -39,6 +39,9 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
 
         super(AuthenticatorTest, self).setUp()
 
+        # This causes some weird zope errors
+        mock.patch("certbot.display.util.notify", lambda x: ...).start()
+
         # Setup config files
         config_files = (
             ('sp.ini', {
