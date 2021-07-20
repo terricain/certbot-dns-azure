@@ -133,7 +133,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
             resource_group_name='dns1',
             zone_name='example.com',
             relative_record_set_name=zone1_domain_name,
-            parameters=RecordSet(txt_records=TxtRecord(value=[zone1_key, 'someexistingkey']))
+            parameters=RecordSet(txt_records=[TxtRecord(value=[zone1_key]), TxtRecord(value=['someexistingkey'])])
         )]
         zone1_call = self.mock_client.record_sets.create_or_update.call_args_list[0]
         self.assertEqual(zone1_call[1]['zone_name'], "example.com")
@@ -141,10 +141,10 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.assertEqual(zone1_call[1]['relative_record_set_name'], zone1_relative_record)
         zone1_txt_records = zone1_call[1]['parameters'].txt_records
 
-        self.assertEqual(len(zone1_txt_records), 1)
-        txt_values = zone1_txt_records[0].value
-        self.assertIn(zone1_key, txt_values)
-        self.assertIn('someexistingkey', txt_values)
+        self.assertEqual(len(zone1_txt_records), 2)
+        txt_values = [rr.value for rr in zone1_txt_records]
+        self.assertIn([zone1_key], txt_values)
+        self.assertIn(['someexistingkey'], txt_values)
 
     def test_perform_subdomain(self):
         self.mock_client.record_sets.get.return_value = RecordSet(txt_records=[])

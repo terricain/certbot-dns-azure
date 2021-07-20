@@ -200,7 +200,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                     relative_record_set_name=relative_validation_name,
                     record_type='TXT',
                     parameters=RecordSet(ttl=self.ttl,
-                                         txt_records=[TxtRecord(value=list(txt_value))])
+                                         txt_records=[TxtRecord(value=[v]) for v in txt_value])
                 )
             else:
                 client.record_sets.delete(
