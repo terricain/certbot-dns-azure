@@ -1,5 +1,6 @@
 """DNS Authenticator for Azure DNS."""
 import logging
+from os import getenv
 from typing import Dict
 
 import zope.interface
@@ -32,6 +33,16 @@ class Authenticator(dns_common.DNSAuthenticator):
         super(Authenticator, self).__init__(*args, **kwargs)
         self.credential = None
         self.domain_zoneid = {}  # type: Dict[str, str]
+
+        # Azure Environmental Support
+        self._azure_environment = getenv("AZURE_ENVIRONMENT", "AzurePublicCloud").lower()
+        self._azure_endpoints = {
+            "azurepubliccloud": "https://management.azure.com/",
+            "azureusgovernmentcloud": "https://management.usgovcloudapi.net/",
+            "azurechinacloud": "https://management.chinacloudapi.cn/",
+            "azuregermancloud": "https://management.microsoftazure.de/"
+        }
+        self._base_url = self._azure_endpoints[self._azure_environment]
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
@@ -223,4 +234,4 @@ class Authenticator(dns_common.DNSAuthenticator):
         :return: Azure DNS client
         :rtype: DnsManagementClient
         """
-        return DnsManagementClient(self.credential, subscription_id)
+        return DnsManagementClient(self.credential, subscription_id, self.base_url)
