@@ -119,7 +119,8 @@ class Authenticator(dns_common.DNSAuthenticator):
             return ClientSecretCredential(
                 client_id=client_id,
                 client_secret=client_secret,
-                tenant_id=tenant_id
+                tenant_id=tenant_id,
+                authority="https://login.microsoftonline.us/"
             )
         elif msi_client_id:
             return ManagedIdentityCredential(client_id=msi_client_id)
@@ -234,4 +235,4 @@ class Authenticator(dns_common.DNSAuthenticator):
         :return: Azure DNS client
         :rtype: DnsManagementClient
         """
-        return DnsManagementClient(self.credential, subscription_id, self.base_url)
+        return DnsManagementClient(self.credential, subscription_id, None, self._base_url, credential_scopes=[self._base_url + "/.default"])
