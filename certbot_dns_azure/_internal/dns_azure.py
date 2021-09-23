@@ -255,5 +255,4 @@ class Authenticator(dns_common.DNSAuthenticator):
         :return: Azure DNS client
         :rtype: DnsManagementClient
         """
-
         return DnsManagementClient(self.credential, subscription_id, None, self._arm_endpoint, credential_scopes=[self._arm_endpoint + "/.default"])
