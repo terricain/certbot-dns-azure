@@ -35,12 +35,24 @@ class Authenticator(dns_common.DNSAuthenticator):
         self.domain_zoneid = {}  # type: Dict[str, str]
 
         # Azure Environmental Support
-        self._azure_environment = getenv("AZURE_ENVIRONMENT", "azurepubliccloud").lower()
+        self._azure_environment = getenv("AZURE_ENVIRONMENT", "AzurePublicCloud").lower()
         self._azure_endpoints = {
-            "azurepubliccloud": "https://management.azure.com/",
-            "azureusgovernmentcloud": "https://management.usgovcloudapi.net/",
-            "azurechinacloud": "https://management.chinacloudapi.cn/",
-            "azuregermancloud": "https://management.microsoftazure.de/"
+            "azurepubliccloud": {
+                "ResourceManagerEndpoint": "https://management.azure.com/",
+                "ActiveDirectoryEndpoint": "https://login.microsoftonline.com/"
+            },
+            "azureusgovernmentcloud": {
+                "ResourceManagerEndpoint": "https://management.usgovcloudapi.net/",
+                "ActiveDirectoryEndpoint": "https://login.microsoftonline.us/"
+            },
+            "azurechinacloud": {
+                "ResourceManagerEndpoint": "https://management.chinacloudapi.cn/",
+                "ActiveDirectoryEndpoint": "https://login.chinacloudapi.cn/"
+            },
+            "azuregermancloud": {
+                "ResourceManagerEndpoint": "https://management.microsoftazure.de/",
+                "ActiveDirectoryEndpoint": "https://login.microsoftonline.de/"
+            }
         }
 
     @classmethod
@@ -79,9 +91,10 @@ class Authenticator(dns_common.DNSAuthenticator):
         environment = credentials.conf('environment')
 
         if environment != None:
-            self._azure_environment = environment
+            self._azure_environment = environment.lower()
 
-        self._base_url = self._azure_endpoints[self._azure_environment]
+        self._arm_endpoint = self._azure_endpoints[self._azure_environment]["ResourceManagerEndpoint"]
+        self._aad_endpoint = self._azure_endpoints[self._azure_environment]["ActiveDirectoryEndpoint"]
         
         # Check we have key value
         dns_zone_mapping_items_has_colon = [':' in value
@@ -116,18 +129,18 @@ class Authenticator(dns_common.DNSAuthenticator):
         msi_client_id = valid_creds.conf('msi_client_id')
 
         self.credential = self._get_azure_credentials(
-            sp_client_id, sp_client_secret, tenant_id, msi_client_id
+            sp_client_id, sp_client_secret, tenant_id, msi_client_id, self._aad_endpoint
         )
 
     @staticmethod
-    def _get_azure_credentials(client_id=None, client_secret=None, tenant_id=None, msi_client_id=None):
+    def _get_azure_credentials(client_id=None, client_secret=None, tenant_id=None, msi_client_id=None, aad_endpoint=None):
         has_sp = all((client_id, client_secret, tenant_id))
         if has_sp:
             return ClientSecretCredential(
                 client_id=client_id,
                 client_secret=client_secret,
                 tenant_id=tenant_id,
-                authority="https://login.microsoftonline.us/"
+                authority=aad_endpoint
             )
         elif msi_client_id:
             return ManagedIdentityCredential(client_id=msi_client_id)
@@ -243,4 +256,4 @@ class Authenticator(dns_common.DNSAuthenticator):
         :rtype: DnsManagementClient
         """
         
-        return DnsManagementClient(self.credential, subscription_id, None, self._base_url, credential_scopes=[self._base_url + "/.default"])
+        return DnsManagementClient(self.credential, subscription_id, None, self._arm_endpoint, credential_scopes=[self._arm_endpoint + "/.default"])
