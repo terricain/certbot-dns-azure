@@ -90,7 +90,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         # Azure Environment
         environment = credentials.conf('environment')
 
-        if environment != None:
+        if environment:
             self._azure_environment = environment.lower()
 
         self._arm_endpoint = self._azure_endpoints[self._azure_environment]["ResourceManagerEndpoint"]
@@ -255,5 +255,5 @@ class Authenticator(dns_common.DNSAuthenticator):
         :return: Azure DNS client
         :rtype: DnsManagementClient
         """
-        
+
         return DnsManagementClient(self.credential, subscription_id, None, self._arm_endpoint, credential_scopes=[self._arm_endpoint + "/.default"])
