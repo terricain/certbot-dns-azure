@@ -35,14 +35,13 @@ class Authenticator(dns_common.DNSAuthenticator):
         self.domain_zoneid = {}  # type: Dict[str, str]
 
         # Azure Environmental Support
-        self._azure_environment = getenv("AZURE_ENVIRONMENT", "AzurePublicCloud").lower()
+        self._azure_environment = getenv("AZURE_ENVIRONMENT", "azurepubliccloud").lower()
         self._azure_endpoints = {
             "azurepubliccloud": "https://management.azure.com/",
             "azureusgovernmentcloud": "https://management.usgovcloudapi.net/",
             "azurechinacloud": "https://management.chinacloudapi.cn/",
             "azuregermancloud": "https://management.microsoftazure.de/"
         }
-        self._base_url = self._azure_endpoints[self._azure_environment]
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
@@ -76,6 +75,14 @@ class Authenticator(dns_common.DNSAuthenticator):
                                      ' e.g dns_azure_zone1 = DOMAIN:DNS_ZONE_RESOURCE_GROUP_ID'
                                      ''.format(credentials.confobj.filename))
 
+        # Azure Environment
+        environment = credentials.conf('environment')
+
+        if environment != None:
+            self._azure_environment = environment
+
+        self._base_url = self._azure_endpoints[self._azure_environment]
+        
         # Check we have key value
         dns_zone_mapping_items_has_colon = [':' in value
                                             for key, value in credentials.confobj.items()
@@ -235,4 +242,5 @@ class Authenticator(dns_common.DNSAuthenticator):
         :return: Azure DNS client
         :rtype: DnsManagementClient
         """
+        
         return DnsManagementClient(self.credential, subscription_id, None, self._base_url, credential_scopes=[self._base_url + "/.default"])

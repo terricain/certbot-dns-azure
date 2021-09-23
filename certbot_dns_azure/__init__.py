@@ -43,6 +43,8 @@ At least 1 zone mapping is required.
    dns_azure_sp_client_secret = E-xqXU83Y-jzTI6xe9fs2YC~mck3ZzUih9
    dns_azure_tenant_id = ed1090f3-ab18-4b12-816c-599af8a88cf7
 
+   dns_azure_environment = "AzurePublicCloud"
+
    dns_azure_zone1 = example.com:/subscriptions/c135abce-d87d-48df-936c-15596c6968a5/resourceGroups/dns1
    dns_azure_zone2 = example.org:/subscriptions/99800903-fb14-4992-9aff-12eaf2744622/resourceGroups/dns2
 
@@ -60,6 +62,8 @@ At least 1 zone mapping is required.
    :caption: Example config file using system assigned MSI:
 
    dns_azure_msi_system_assigned = true
+
+   dns_azure_environment = "AzurePublicCloud"
 
    dns_azure_zone1 = example.com:/subscriptions/c135abce-d87d-48df-936c-15596c6968a5/resourceGroups/dns1
    dns_azure_zone2 = example.org:/subscriptions/99800903-fb14-4992-9aff-12eaf2744622/resourceGroups/dns2
@@ -82,6 +86,24 @@ on configuration file", followed by the path to the config
 file. This warning will be emitted each time Certbot uses the config file,
 including for renewal, and cannot be silenced except by addressing the issue
 (e.g., by using a command like ``chmod 600`` to restrict access to the file).
+
+
+Azure Environment
+--------
+
+The Azure Cloud will default to ``AzurePublicCloud``, this is used to change
+the authentication endpoint used when generating credentials. This option
+can be specified in the config file using ``dns_azure_environment`` or 
+via an environment variable ``AZURE_ENVIRONMENT``.
+
+The supported values are:
+
+========================================  =====================================
+``AzurePublicCloud``                      https://management.azure.com/
+``AzureUSGovernmentCloud``                https://management.usgovcloudapi.net/
+``AzureChinaCloud``                       https://management.chinacloudapi.cn/
+``AzureGermanCloud``                      https://management.microsoftazure.de/
+========================================  =====================================
 
 
 Examples
