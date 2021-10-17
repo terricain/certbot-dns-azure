@@ -7,7 +7,7 @@ import zope.interface
 from azure.mgmt.dns import DnsManagementClient
 from azure.mgmt.dns.models import RecordSet, TxtRecord
 from azure.core.exceptions import HttpResponseError
-from azure.identity import ClientSecretCredential, ManagedIdentityCredential
+from azure.identity import ClientSecretCredential, ManagedIdentityCredential, CertificateCredential
 
 from certbot import errors
 from certbot import interfaces
@@ -68,8 +68,9 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _validate_credentials(self, credentials):
         sp_client_id = credentials.conf('sp_client_id')
         sp_client_secret = credentials.conf('sp_client_secret')
+        sp_certificate_path = credentials.conf('sp_certificate_path')
         tenant_id = credentials.conf('tenant_id')
-        has_sp = all((sp_client_id, sp_client_secret, tenant_id))
+        has_sp = all((sp_client_id, any((sp_client_secret, sp_certificate_path)), tenant_id))
 
         msi_client_id = credentials.conf('msi_client_id')
         msi_system_assigned = credentials.conf('msi_system_assigned')
@@ -125,20 +126,29 @@ class Authenticator(dns_common.DNSAuthenticator):
         # Figure out which credential type we're going to use
         sp_client_id = valid_creds.conf('sp_client_id')
         sp_client_secret = valid_creds.conf('sp_client_secret')
+        sp_certificate_path = valid_creds.conf('sp_certificate_path')
         tenant_id = valid_creds.conf('tenant_id')
         msi_client_id = valid_creds.conf('msi_client_id')
 
         self.credential = self._get_azure_credentials(
-            sp_client_id, sp_client_secret, tenant_id, msi_client_id, self._aad_endpoint
+            sp_client_id, sp_client_secret, sp_certificate_path, tenant_id, msi_client_id, self._aad_endpoint
         )
 
     @staticmethod
-    def _get_azure_credentials(client_id=None, client_secret=None, tenant_id=None, msi_client_id=None, aad_endpoint=None):
+    def _get_azure_credentials(client_id=None, client_secret=None, certificate_path=None, tenant_id=None, msi_client_id=None, aad_endpoint=None):
         has_sp = all((client_id, client_secret, tenant_id))
+        has_sp_cert = all((client_id, certificate_path, tenant_id))
         if has_sp:
             return ClientSecretCredential(
                 client_id=client_id,
                 client_secret=client_secret,
+                tenant_id=tenant_id,
+                authority=aad_endpoint
+            )
+        elif has_sp_cert:
+            return CertificateCredential(
+                client_id=client_id,
+                certificate_path=certificate_path,
                 tenant_id=tenant_id,
                 authority=aad_endpoint
             )
@@ -197,6 +207,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                 parameters=RecordSet(ttl=self.ttl, txt_records=[TxtRecord(value=[v]) for v in txt_value])
             )
         except HttpResponseError as err:
+            print(f"Zone name: {azure_domain}, record name: {relative_validation_name}, group: {resource_group_name}")
             raise errors.PluginError('Failed to add TXT record to domain '
                                      '{}, error: {}'.format(domain, err))
 
