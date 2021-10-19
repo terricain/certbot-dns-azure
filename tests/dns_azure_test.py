@@ -51,6 +51,13 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
                 'azure_zone1': 'example.com:/subscriptions/c135abce-d87d-48df-936c-15596c6968a5/resourceGroups/dns1',
                 'azure_zone2': 'example.org:/subscriptions/99800903-fb14-4992-9aff-12eaf2744622/resourceGroups/dns2'
             }),
+            ('sp_cert.ini', {
+                'azure_sp_client_id': '912ce44a-0156-4669-ae22-c16a17d34ca5',
+                'azure_sp_client_secret': 'E-xqXU83Y-jzTI6xe9fs2YC~mck3ZzUih9',
+                'azure_certificate_path': '/path/to/cert.pem',
+                'azure_zone1': 'example.com:/subscriptions/c135abce-d87d-48df-936c-15596c6968a5/resourceGroups/dns1',
+                'azure_zone2': 'example.org:/subscriptions/99800903-fb14-4992-9aff-12eaf2744622/resourceGroups/dns2'
+            }),
             ('user_assigned_msi.ini', {
                 'azure_msi_client_id': '912ce44a-0156-4669-ae22-c16a17d34ca5',
                 'azure_zone1': 'example.com:/subscriptions/c135abce-d87d-48df-936c-15596c6968a5/resourceGroups/dns1',
@@ -67,6 +74,9 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
 
         self.sp_config = mock.MagicMock(
             azure_config=os.path.join(self.tempdir, 'sp.ini'),
+            azure_propagation_seconds=0)
+        self.sp_cert_config = mock.MagicMock(
+            azure_config=os.path.join(self.tempdir, 'sp_cert.ini'),
             azure_propagation_seconds=0)
         self.umsi_config = mock.MagicMock(
             azure_config=os.path.join(self.tempdir, 'user_assigned_msi.ini'),
