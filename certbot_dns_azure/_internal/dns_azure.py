@@ -207,7 +207,6 @@ class Authenticator(dns_common.DNSAuthenticator):
                 parameters=RecordSet(ttl=self.ttl, txt_records=[TxtRecord(value=[v]) for v in txt_value])
             )
         except HttpResponseError as err:
-            print(f"Zone name: {azure_domain}, record name: {relative_validation_name}, group: {resource_group_name}")
             raise errors.PluginError('Failed to add TXT record to domain '
                                      '{}, error: {}'.format(domain, err))
 
