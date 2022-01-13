@@ -49,6 +49,19 @@ At least 1 zone mapping is required.
    dns_azure_zone2 = example.org:/subscriptions/99800903-fb14-4992-9aff-12eaf2744622/resourceGroups/dns2
 
 .. code-block:: ini
+   :name: certbot_azure_service_principal_certificate.ini
+   :caption: Example config file using a service principal with certificate
+
+   dns_azure_sp_client_id = 912ce44a-0156-4669-ae22-c16a17d34ca5
+   dns_azure_sp_certificate_path = /path/to/certificate.pem
+   dns_azure_tenant_id = ed1090f3-ab18-4b12-816c-599af8a88cf7
+
+   dns_azure_environment = "AzurePublicCloud"
+
+   dns_azure_zone1 = example.com:/subscriptions/c135abce-d87d-48df-936c-15596c6968a5/resourceGroups/dns1
+   dns_azure_zone2 = example.org:/subscriptions/99800903-fb14-4992-9aff-12eaf2744622/resourceGroups/dns2
+
+.. code-block:: ini
    :name: certbot_azure_user_msi.ini
    :caption: Example config file using used assigned MSI:
 
