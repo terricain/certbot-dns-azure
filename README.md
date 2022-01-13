@@ -1,5 +1,4 @@
-certbot-dns-azure
-=================
+# certbot-dns-azure
 
 [![Tests](https://github.com/binkhq/certbot-dns-azure/workflows/Release/badge.svg)](https://github.com/binkhq/certbot-dns-azure/actions)
 [![Python Version](https://img.shields.io/pypi/pyversions/certbot-dns-azure)](https://pypi.org/project/certbot-dns-azure/)
@@ -13,12 +12,24 @@ This plugin is built from the ground up and follows the development style and li
 of other `certbot-dns-*` plugins found in the
 [Official Certbot Repository](https://github.com/certbot/certbot). PR is open [here](https://github.com/certbot/certbot/pull/8727) though Certbot is not accepting plugin PR's at the moment.
 
-Installation
-------------
+## Installation
 
+
+### Via Pip
+ 
 ```
 pip install certbot certbot-dns-azure
 ```
+
+### Via Snap - not tested yet
+
+```
+sudo snap install certbot-dns-azure
+sudo snap set certbot trust-plugin-with-root=ok
+sudo snap connect certbot:plugin certbot-dns-azure
+```
+
+### Verification
 
 Verify:
 
