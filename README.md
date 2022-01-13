@@ -24,6 +24,7 @@ pip install certbot certbot-dns-azure
 ### Via Snap - not tested yet
 
 ```
+sudo snap install certbot --classic
 sudo snap install certbot-dns-azure
 sudo snap set certbot trust-plugin-with-root=ok
 sudo snap connect certbot:plugin certbot-dns-azure
