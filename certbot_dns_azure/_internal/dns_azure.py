@@ -3,22 +3,18 @@ import logging
 from os import getenv
 from typing import Dict
 
-import zope.interface
 from azure.mgmt.dns import DnsManagementClient
 from azure.mgmt.dns.models import RecordSet, TxtRecord
 from azure.core.exceptions import HttpResponseError
 from azure.identity import ClientSecretCredential, ManagedIdentityCredential, CertificateCredential
 
 from certbot import errors
-from certbot import interfaces
 from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)
 logging.getLogger('azure').setLevel(logging.WARNING)
 
 
-@zope.interface.implementer(interfaces.IAuthenticator)
-@zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(dns_common.DNSAuthenticator):
     """DNS Authenticator for Azure DNS
 
