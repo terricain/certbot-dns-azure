@@ -20,7 +20,6 @@ parts:
         snapcraftctl pull
         snapcraftctl set-version `grep ^version $SNAPCRAFT_PART_SRC/setup.py | cut -f2 -d= | tr -d "'[:space:]"`
     build-environment:
-#      - PIP_CONSTRAINT: $SNAPCRAFT_PART_SRC/snap-constraints.txt
       - SNAP_BUILD: "True"
     requirements:
       - snap-requirements.txt
