@@ -18,7 +18,7 @@ of other `certbot-dns-*` plugins found in the
 ### Via Pip
  
 ```
-pip install certbot certbot-dns-azure
+pip3 install certbot certbot-dns-azure
 ```
 
 ### Via Snap - not tested yet
