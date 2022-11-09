@@ -9,7 +9,7 @@ version = '1.5.0'
 # azure-mgmt-dns is still the old style SDK, so will change dramatically
 # when they refactor, most notably the credential parts
 install_requires = [
-    'azure-identity>=1.5.0',
+    'azure-identity>=1.11.0',
     'azure-mgmt-dns>=8.0.0',
     'setuptools>=39.0.1',
     'zope.interface',
