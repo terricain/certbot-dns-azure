@@ -160,11 +160,9 @@ class Authenticator(dns_common.DNSAuthenticator):
                 if domain.endswith(azure_dns_domain):
                     subscription_id = resource_group.split('/')[2]
                     rg_name = resource_group.split('/')[4]
-                    try:
-                        azure_dns_zone = resource_group.split('/')[8]
-                    except IndexError:
-                        azure_dns_zone = azure_dns_domain
-                    return azure_dns_zone, subscription_id, rg_name
+                    if '/microsoft.network/dnszones/' in resource_group.lower():
+                        azure_dns_domain = resource_group.split('/')[8]
+                    return azure_dns_domain, subscription_id, rg_name
             else:
                 raise errors.PluginError('Domain {} does not have a valid domain to '
                                          'resource group id mapping'.format(domain))
