@@ -118,6 +118,29 @@ The supported values are:
 ``AzureGermanCloud``                      https://management.microsoftazure.de/
 ========================================  =====================================
 
+DNS delegation
+--------------
+DNS delegation, also known as DNS aliasing, is a process of allowing a secondary DNS zone to handle validation in place
+of the primary zone. For example, you would like to acquire a certificate for ``example.com`` but have the validation
+performed on a secondary domain ``example.org``. You would create a ``_acme-challenge.example.com`` CNAME on the
+``example.com`` nameserver with the value of ``_acme-challenge.example.org``. Certbot will resolve the CNAME and
+validate the ``example.com`` domain.
+
+The common reasons for DNS delegation are:
+ * The primary DNS zone is hosted on a nameserver with no API access
+ * Security concerns regarding access to the primary DNS zone
+
+To use DNS delegation:
+ #. Manually create the ``_acme-challenge.<primary domain>`` CNAME with the value ``_acme-challenge.<secondary domain>`` on the ``example.com`` nameserver.
+ #. In the certbot azure configuration file, specify the primary domain and the entire secondary DNS zone's resource ID in ``dns_azure_zoneX``.
+ #. Request the certificate.
+
+.. code-block:: ini
+   :name: certbot_azure_system_msi.ini
+   :caption: Example configuration snippet for DNS delegation
+
+   dns_azure_zone1 = example.com:/subscriptions/c135abce-d87d-48df-936c-15596c6968a/resourceGroups/dns1/providers/Microsoft.Network/dnszones/example.org
+   dns_azure_zone2 = example.com:/subscriptions/99800903-fb14-4992-9aff-12eaf2744622/resourceGroups/dns2/providers/Microsoft.Network/dnszones/acme.example.com
 
 Examples
 --------
