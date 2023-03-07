@@ -294,6 +294,18 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
             self.auth.perform(SINGLE_DOMAIN)
         self.assertIn('DNS Zone mapping is not in the format', cm.exception.args[0])
 
+    def test_config_bad_resource_group(self):
+        # Test invalid resource group ID
+        dns_test_common.write({
+            'azure_sp_client_id': '912ce44a-0156-4669-ae22-c16a17d34ca5',
+            'azure_sp_client_secret': 'E-xqXU83Y-jzTI6xe9fs2YC~mck3ZzUih9',
+            'azure_tenant_id': 'ed1090f3-ab18-4b12-816c-599af8a88cf7',
+            'azure_zone1': 'example.com:/subscriptions/c135abce-d87d-48df-936c-15596c6968a5/invalid',
+        }, self.sp_config.azure_config)
+        with self.assertRaises(errors.PluginError) as cm:
+            self.auth.perform(SINGLE_DOMAIN)
+        self.assertIn('Failed to parse resource ID for example.com', cm.exception.args[0])
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
