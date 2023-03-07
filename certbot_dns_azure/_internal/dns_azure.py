@@ -6,6 +6,7 @@ from typing import Dict
 from azure.mgmt.dns import DnsManagementClient
 from azure.mgmt.dns.models import RecordSet, TxtRecord
 from azure.core.exceptions import HttpResponseError
+from azure.core.utils import CaseInsensitiveDict
 from azure.identity import ClientSecretCredential, ManagedIdentityCredential, CertificateCredential
 
 from certbot import errors
@@ -158,8 +159,15 @@ class Authenticator(dns_common.DNSAuthenticator):
             for azure_dns_domain, resource_group in self.domain_zoneid.items():
                 # Look to see if domain ends with key, to cover subdomains
                 if domain.endswith(azure_dns_domain):
-                    subscription_id = resource_group.split('/')[2]
-                    rg_name = resource_group.split('/')[4]
+                    try:
+                        resource = self.parse_azure_resource_id(resource_group)
+                    except ValueError as exc:
+                        raise errors.PluginError('Failed to parse resource ID for {}: {}'
+                                                 .format(domain, resource_group)) from exc
+                    subscription_id = resource.get('subscriptions')
+                    rg_name = resource.get('resourceGroups')
+                    if 'dnsZones' in resource:
+                        azure_dns_domain = resource.get('dnsZones')
                     return azure_dns_domain, subscription_id, rg_name
             else:
                 raise errors.PluginError('Domain {} does not have a valid domain to '
@@ -262,3 +270,20 @@ class Authenticator(dns_common.DNSAuthenticator):
         :rtype: DnsManagementClient
         """
         return DnsManagementClient(self.credential, subscription_id, None, self._arm_endpoint, credential_scopes=[self._arm_endpoint + "/.default"])
+
+    @staticmethod
+    def parse_azure_resource_id(resource_id):
+        rsrc_id = resource_id
+        if rsrc_id.startswith('/'):
+            rsrc_id = rsrc_id[1:]
+
+        if rsrc_id.endswith('/'):
+            rsrc_id = rsrc_id[:-1]
+
+        if '/' not in rsrc_id:
+            raise ValueError('Invalid resource ID: {}'.format(resource_id))
+
+        parts = rsrc_id.split('/')
+        if (len(parts) % 2) != 0 or '' in parts:
+            raise ValueError('Invalid resource ID: {}'.format(resource_id))
+        return CaseInsensitiveDict(zip(parts[0::2], parts[1::2]))
