@@ -131,6 +131,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.assertEqual(len(zone2_txt_records), 1)
         self.assertEqual(zone2_txt_records[0].value[0], zone2_key)
 
+        # Test DNS delegation of example.net to example.com
         self.assertEqual(zone3_req.domain, "example.net")
         self.assertEqual(zone3_call[1]['zone_name'], "example.com")
         self.assertEqual(zone3_call[1]['relative_record_set_name'], zone3_relative_record)
