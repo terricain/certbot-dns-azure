@@ -123,7 +123,7 @@ DNS delegation
 DNS delegation, also known as DNS aliasing, is a process of allowing a secondary DNS zone to handle validation in place
 of the primary zone. For example, you would like to acquire a certificate for ``example.com`` but have the validation
 performed on a secondary domain ``example.org``. You would create a ``_acme-challenge.example.com`` CNAME on the
-``example.com`` nameserver with the value of ``_acme-challenge.example.org``. Certbot will resolve the CNAME and
+``example.com`` nameserver with the value of ``_acme-challenge.example.com.example.org``. Certbot will resolve the CNAME and
 validate the ``example.com`` domain.
 
 The common reasons for DNS delegation are:
@@ -131,7 +131,7 @@ The common reasons for DNS delegation are:
  * Security concerns regarding access to the primary DNS zone
 
 To use DNS delegation:
- #. Manually create the ``_acme-challenge.<primary domain>`` CNAME with the value ``_acme-challenge.<secondary domain>`` on the ``example.com`` nameserver.
+ #. Manually create the ``_acme-challenge.<primary domain>`` CNAME with the value ``_acme-challenge.<primary domain>.<secondary domain>`` on the primary domain nameserver.
  #. In the certbot azure configuration file, specify the primary domain and the entire secondary DNS zone's resource ID in ``dns_azure_zoneX``.
  #. Request the certificate.
 
