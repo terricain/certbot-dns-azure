@@ -102,7 +102,7 @@ including for renewal, and cannot be silenced except by addressing the issue
 
 
 Azure Environment
---------
+-----------------
 
 The Azure Cloud will default to ``AzurePublicCloud``, this is used to change
 the authentication endpoint used when generating credentials. This option
@@ -120,30 +120,84 @@ The supported values are:
 
 DNS delegation
 --------------
+
 DNS delegation, also known as DNS aliasing, is a process of allowing a secondary DNS zone to handle validation in place
 of the primary zone. For example, you would like to acquire a certificate for ``example.com`` but have the validation
 performed on a secondary domain ``example.org``. You would create a ``_acme-challenge.example.com`` CNAME on the
-``example.com`` nameserver with the value of ``_acme-challenge.example.org``. Certbot will resolve the CNAME and
-validate the ``example.com`` domain.
+``example.com`` nameserver with the value of ``_acme-challenge.example.org``. The ACME server will resolve the CNAME and
+validate the TXT record ``_acme-challenge.example.org`` instead. Certbot itself does not support CNAME aliasing,
+therefore this plugin does what it can to support it.
 
 The common reasons for DNS delegation are:
  * The primary DNS zone is hosted on a nameserver with no API access
  * Security concerns regarding access to the primary DNS zone
 
-To use DNS delegation:
- #. Manually create the ``_acme-challenge.<primary domain>`` CNAME with the value ``_acme-challenge.<secondary domain>`` on the ``example.com`` nameserver.
- #. In the certbot azure configuration file, specify the primary domain and the entire secondary DNS zone's resource ID in ``dns_azure_zoneX``.
- #. Request the certificate.
+We'll use two domains for the examples below: ``foo.com`` and ``bar.com``.
+
+Example: Primary Zone, no API Access
+++++++++++++++++++++++++++++++++++++
+
+Let's assume you wish to get a certificate for ``test.foo.com``, this will result in a validation record for
+``_acme-challenge.test.foo.com``. Assuming you don't have API access to the ``foo.com`` zone, you can manually CNAME said
+validation record to point it to ``bar.com``. E.g.
+``_acme-challenge.test.foo.com CNAME -> _acme-challenge.test.foo.com.bar.com`` This will result in a TXT record called
+``_acme-challenge.test.foo.com`` created in the ``bar.com`` zone.
+
+This can be achieved by using the following config snippet
 
 .. code-block:: ini
-   :name: certbot_azure_system_msi.ini
-   :caption: Example configuration snippet for DNS delegation
+    :name: certbot_azure_alias1.ini
+    :caption: Example configuration snippet for DNS delegation
 
-   dns_azure_zone1 = example.com:/subscriptions/c135abce-d87d-48df-936c-15596c6968a/resourceGroups/dns1/providers/Microsoft.Network/dnszones/example.org
-   dns_azure_zone2 = example.com:/subscriptions/99800903-fb14-4992-9aff-12eaf2744622/resourceGroups/dns2/providers/Microsoft.Network/dnszones/acme.example.com
+    dns_azure_zone1 = test.foo.com:/subscriptions/c135abce-d87d-48df-936c-15596c6968a/resourceGroups/dns1/providers/Microsoft.Network/dnszones/bar.com
 
-Examples
---------
+So when the Azure Certbot plugin gets requested to make ``_acme-challenge.test.foo.com``, the zone that record gets
+created in is overridden to ``bar.com`` hence the entire ``_acme-challenge.test.foo.com`` is needed as the prefix in the
+CNAME value before ``bar.com``.
+
+Example: Delegation + more security
++++++++++++++++++++++++++++++++++++
+
+One can go a step further than the step above when hosting records in Azure. Instead of granting Certbot write access
+to an entire DNS Zone, you can grant access to specific records.
+
+As with before, we shall get a certificate for ``test.foo.com``. We shall make a CNAME record like:
+``_acme-challenge.test.foo.com CNAME test_validation.bar.com`` (yes it doesn't *need* ``_acme-challenge`` in this example).
+
+Using a config like the following:
+
+.. code-block:: ini
+    :name: certbot_azure_alias2.ini
+    :caption: Example configuration snippet for DNS delegation
+
+    dns_azure_zone1 = test.foo.com:/subscriptions/c135abce-d87d-48df-936c-15596c6968a/resourceGroups/dns1/providers/Microsoft.Network/dnszones/bar.com/TXT/test_validation
+
+This **requires** you to create a TXT record called ``test_validation`` in the ``bar.com`` zone, the value should be ``-`` and certbot should have IAM privileges to
+write to that record explicitly. Now when the request is sent to the plugin to create ``_acme-challenge.test.foo.com``
+the zone its created in will be overridden with ``bar.com`` and the validation record will be overridden with ``test_validation``. This
+effectively does the same thing as if certbot had actually resolved the CNAME (which it doesn't).
+
+Now one caveat here, if you assign specific IAM roles to an individual record, they'll be lost when the record is cleaned up and deleted.
+Which means when it comes to renewal, it'll fail as it has no IAM privileges to update said record as it no longer exists. For this reason
+when the config has record ID's in it, it will not delete the validation records, it will just set its value to ``-``
+(hence you were told to set this initially).
+
+This example can be simplified to allow you to reduce the certbot permissions but **not** do CNAME delegation, so
+for ``test.foo.com`` you would make a TXT record for ``_acme-challenge.test.foo.com`` with the value of ``-`` and then use a config
+snippet like:
+
+.. code-block:: ini
+    :name: certbot_azure_moresecure.ini
+    :caption: Example configuration snippet for individual record permissions
+
+    dns_azure_zone1 = test.foo.com:/subscriptions/c135abce-d87d-48df-936c-15596c6968a/resourceGroups/dns1/providers/Microsoft.Network/dnszones/foo.com/TXT/_acme-validation.test
+
+This will override the zone to foo.com (which ``test`` is already in) and the validation record (though it's overridden to the same thing) but now
+it wont delete said validation record.
+
+
+Generic Certbot Examples
+------------------------
 
 .. code-block:: bash
    :caption: To acquire a certificate for ``example.com``

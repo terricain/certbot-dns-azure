@@ -4,7 +4,7 @@
 [![Python Version](https://img.shields.io/pypi/pyversions/certbot-dns-azure)](https://pypi.org/project/certbot-dns-azure/)
 [![PyPi Status](https://img.shields.io/pypi/status/certbot-dns-azure)](https://pypi.org/project/certbot-dns-azure/)
 [![Version](https://img.shields.io/pypi/v/certbot-dns-azure)](https://pypi.org/project/certbot-dns-azure/)
-[![Docs](https://readthedocs.org/projects/certbot-dns-azure/badge/?version=latest&style=flat)](https://certbot-dns-azure.readthedocs.io/en/latest/)
+[![Docs](https://readthedocs.org/projects/certbot-dns-azure/badge/?version=latest&style=flat)](https://docs.certbot-dns-azure.co.uk/en/latest/)
 
 AzureDNS Authenticator plugin for [Certbot](https://certbot.eff.org/).
 
@@ -48,6 +48,6 @@ Entry point: dns-azure = certbot_dns_azure.dns_azure:Authenticator
 ...
 ```
 
-Docs and instructions on configuration are [here](https://certbot-dns-azure.readthedocs.io/en/latest/)
+Docs and instructions on configuration are [here](https://docs.certbot-dns-azure.co.uk/en/latest/)
 
 

@@ -1,7 +1,7 @@
 """DNS Authenticator for Azure DNS."""
 import logging
 from os import getenv
-from typing import Dict
+from typing import Dict, Tuple
 
 from azure.mgmt.dns import DnsManagementClient
 from azure.mgmt.dns.models import RecordSet, TxtRecord
@@ -154,21 +154,47 @@ class Authenticator(dns_common.DNSAuthenticator):
         else:
             return ManagedIdentityCredential()
 
-    def _get_ids_for_domain(self, domain: str):
+    def _get_ids_for_domain(self, domain: str, validation_name: str) -> Tuple[str, str, str, str, bool]:
+        """
+        :param domain: Domain/subdomain to look up the closest parent in the config file
+        :param validation_name: DNS challenge record name, fully qualified
+
+        This returns:
+        * The Azure DNS zone for which to add records to
+        * The subscription ID for said zone
+        * The resource group for said zone
+        * The relative validation record name (or if explicitly overrided with an ID, an alternate record name)
+        * If the validation record can be deleted, if its explicitly overrided, it wont be deleted but set to `-`
+        """
+        # So if the config contains domain.io and test.domain.io
+        # and we want to renew, we'd prefer test.domain.io.
+        # Sort domains by longest first and then attempt to find the right one.
+        # This should work better, as then a.b.test.domain.io would pick domain.io irrelevant
+        # of its order in the config
+        azure_domains = sorted(self.domain_zoneid.keys(), key=lambda domain: len(domain), reverse=True)
+
         try:
-            for azure_dns_domain, resource_group in self.domain_zoneid.items():
+            for azure_dns_domain in azure_domains:
                 # Look to see if domain ends with key, to cover subdomains
                 if domain.endswith(azure_dns_domain):
+                    zone_id = self.domain_zoneid[azure_dns_domain]
+
                     try:
-                        resource = self.parse_azure_resource_id(resource_group)
+                        resource = self.parse_azure_resource_id(zone_id)
                     except ValueError as exc:
                         raise errors.PluginError('Failed to parse resource ID for {}: {}'
-                                                 .format(domain, resource_group)) from exc
+                                                 .format(domain, zone_id)) from exc
                     subscription_id = resource.get('subscriptions')
                     rg_name = resource.get('resourceGroups')
-                    if 'dnsZones' in resource:
+                    if 'dnsZones' in resource:  # If we're manually specifying an alternate zone to use, override.
                         azure_dns_domain = resource.get('dnsZones')
-                    return azure_dns_domain, subscription_id, rg_name
+                    relative_validation_name = self._get_relative_domain(validation_name, azure_dns_domain)
+                    can_delete = True
+                    if 'TXT' in resource:  # If we're explicitly specifing a destination record, use instead.
+                        relative_validation_name = resource.get('TXT')
+                        can_delete = False  # If we're specifying a specific record, dont delete it
+
+                    return azure_dns_domain, subscription_id, rg_name, relative_validation_name, can_delete
             else:
                 raise errors.PluginError('Domain {} does not have a valid domain to '
                                          'resource group id mapping'.format(domain))
@@ -182,9 +208,8 @@ class Authenticator(dns_common.DNSAuthenticator):
         return fqdn.replace(domain, '').strip('.')
 
     def _perform(self, domain, validation_name, validation):
-        azure_domain, subscription_id, resource_group_name = self._get_ids_for_domain(domain)
+        azure_domain, subscription_id, resource_group_name, validation_name, _ = self._get_ids_for_domain(domain, validation_name)
         client = self._get_azure_client(subscription_id)
-        relative_validation_name = self._get_relative_domain(validation_name, azure_domain)
 
         # Check to see if there are any existing TXT validation record values
         txt_value = {validation}
@@ -192,10 +217,12 @@ class Authenticator(dns_common.DNSAuthenticator):
             existing_rr = client.record_sets.get(
                 resource_group_name=resource_group_name,
                 zone_name=azure_domain,
-                relative_record_set_name=relative_validation_name,
+                relative_record_set_name=validation_name,
                 record_type='TXT')
             for record in existing_rr.txt_records:
                 for value in record.value:
+                    if value == '-':
+                        continue
                     txt_value.add(value)
         except HttpResponseError as err:
             if err.status_code != 404:  # Ignore RR not found
@@ -206,7 +233,7 @@ class Authenticator(dns_common.DNSAuthenticator):
             client.record_sets.create_or_update(
                 resource_group_name=resource_group_name,
                 zone_name=azure_domain,
-                relative_record_set_name=relative_validation_name,
+                relative_record_set_name=validation_name,
                 record_type='TXT',
                 parameters=RecordSet(ttl=self.ttl, txt_records=[TxtRecord(value=[v]) for v in txt_value])
             )
@@ -218,15 +245,14 @@ class Authenticator(dns_common.DNSAuthenticator):
         if self.credential is None:
             self._setup_credentials()
 
-        azure_domain, subscription_id, resource_group_name = self._get_ids_for_domain(domain)
-        relative_validation_name = self._get_relative_domain(validation_name, azure_domain)
+        azure_domain, subscription_id, resource_group_name, validation_name, can_delete = self._get_ids_for_domain(domain, validation_name)
         client = self._get_azure_client(subscription_id)
 
         txt_value = set()
         try:
             existing_rr = client.record_sets.get(resource_group_name=resource_group_name,
                                                  zone_name=azure_domain,
-                                                 relative_record_set_name=relative_validation_name,
+                                                 relative_record_set_name=validation_name,
                                                  record_type='TXT')
             for record in existing_rr.txt_records:
                 for value in record.value:
@@ -243,18 +269,27 @@ class Authenticator(dns_common.DNSAuthenticator):
                 client.record_sets.create_or_update(
                     resource_group_name=resource_group_name,
                     zone_name=azure_domain,
-                    relative_record_set_name=relative_validation_name,
+                    relative_record_set_name=validation_name,
                     record_type='TXT',
                     parameters=RecordSet(ttl=self.ttl,
                                          txt_records=[TxtRecord(value=[v]) for v in txt_value])
                 )
             else:
-                client.record_sets.delete(
-                    resource_group_name=resource_group_name,
-                    zone_name=azure_domain,
-                    relative_record_set_name=relative_validation_name,
-                    record_type='TXT'
-                )
+                if can_delete:
+                    client.record_sets.delete(
+                        resource_group_name=resource_group_name,
+                        zone_name=azure_domain,
+                        relative_record_set_name=validation_name,
+                        record_type='TXT'
+                    )
+                else:
+                    client.record_sets.create_or_update(  # We've manually specified a record, so dont delete, set to -
+                        resource_group_name=resource_group_name,
+                        zone_name=azure_domain,
+                        relative_record_set_name=validation_name,
+                        record_type='TXT',
+                        parameters=RecordSet(ttl=self.ttl, txt_records=[TxtRecord(value=['-'])])
+                    )
         except HttpResponseError as err:
             if err.status_code != 404:  # Ignore RR not found
                 raise errors.PluginError('Failed to remove TXT record for domain '
