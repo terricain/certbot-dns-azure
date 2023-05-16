@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, List, Tuple
 
 import pytest
 from azure.mgmt.dns import DnsManagementClient
-from azure.identity import ClientSecretCredential
+from azure.identity import ClientSecretCredential, AzureCliCredential
 
 if TYPE_CHECKING:
     import pathlib
@@ -14,8 +14,8 @@ AZURE_ENV = os.getenv("AZURE_ENVIRONMENT", "AzurePublicCloud")
 EMAIL = os.getenv('EMAIL', 'NOT_AN_EMAIL')
 
 azure_creds = pytest.mark.skipif(
-    any(env not in os.environ for env in ['AZURE_SP_ID', 'AZURE_SP_SECRET', 'AZURE_TENANT_ID', 'EMAIL']),
-    reason="Missing 'AZURE_SP_ID', 'AZURE_SP_SECRET', 'AZURE_TENANT_ID' environment variables"
+    any(env not in os.environ for env in ['AZURE_CLIENT_ID', 'AZURE_TENANT_ID', 'EMAIL']),
+    reason="Missing 'AZURE_CLIENT_ID', 'AZURE_TENANT_ID' environment variables"
 )
 
 SUBSCRIPTION_ID = '90907259-f568-40c9-be09-768317e458ae'
@@ -36,12 +36,15 @@ def get_cert_names(count: int = 1) -> List[str]:
 
 @pytest.fixture(scope='session')
 def azure_dns_client() -> DnsManagementClient:
-    creds = ClientSecretCredential(
-        client_id=os.environ['AZURE_SP_ID'],
-        client_secret=os.environ['AZURE_SP_SECRET'],
-        tenant_id=os.environ['AZURE_TENANT_ID'],
-        authority='https://login.microsoftonline.com/'
-    )
+    if 'AZURE_CLIENT_SECRET' in os.environ:
+        creds = ClientSecretCredential(
+            client_id=os.environ['AZURE_CLIENT_ID'],
+            client_secret=os.environ['AZURE_CLIENT_SECRET'],
+            tenant_id=os.environ['AZURE_TENANT_ID'],
+            authority='https://login.microsoftonline.com/'
+        )
+    else:
+        creds = AzureCliCredential(tenant_id=os.environ['AZURE_TENANT_ID'])
     return DnsManagementClient(creds, SUBSCRIPTION_ID, None, 'https://management.azure.com/', credential_scopes=['https://management.azure.com//.default'])
 
 
@@ -79,8 +82,8 @@ def create_config(tmpdir: 'pathlib.Path', zones: List[str]) -> str:
     :returns: Filepath to config
     """
     config = {
-        'dns_azure_sp_client_id': os.environ['AZURE_SP_ID'],
-        'dns_azure_sp_client_secret': os.environ['AZURE_SP_SECRET'],
+        'dns_azure_sp_client_id': os.environ['AZURE_CLIENT_ID'],
+        'dns_azure_sp_client_secret': os.environ['AZURE_CLIENT_SECRET'],
         'dns_azure_tenant_id': os.environ['AZURE_TENANT_ID'],
         'dns_azure_environment': AZURE_ENV,
     }
