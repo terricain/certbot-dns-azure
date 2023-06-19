@@ -14,8 +14,8 @@ AZURE_ENV = os.getenv("AZURE_ENVIRONMENT", "AzurePublicCloud")
 EMAIL = os.getenv('EMAIL', 'NOT_AN_EMAIL')
 
 azure_creds = pytest.mark.skipif(
-    any(env not in os.environ for env in ['AZURE_CLIENT_ID', 'AZURE_TENANT_ID', 'EMAIL']),
-    reason="Missing 'AZURE_CLIENT_ID', 'AZURE_TENANT_ID' environment variables"
+    any(env not in os.environ for env in ['AZURE_TENANT_ID', 'EMAIL']),
+    reason="Missing 'AZURE_TENANT_ID' or 'EMAIL' environment variables"
 )
 
 SUBSCRIPTION_ID = '90907259-f568-40c9-be09-768317e458ae'
@@ -82,8 +82,9 @@ def create_config(tmpdir: 'pathlib.Path', zones: List[str]) -> str:
     :returns: Filepath to config
     """
     config = {
-        'dns_azure_sp_client_id': os.environ['AZURE_CLIENT_ID'],
-        'dns_azure_sp_client_secret': os.environ['AZURE_CLIENT_SECRET'],
+        # 'dns_azure_sp_client_id': os.environ['AZURE_CLIENT_ID'],
+        # 'dns_azure_sp_client_secret': os.environ['AZURE_CLIENT_SECRET'],
+        'dns_azure_use_cli_credentials': 'true',
         'dns_azure_tenant_id': os.environ['AZURE_TENANT_ID'],
         'dns_azure_environment': AZURE_ENV,
     }

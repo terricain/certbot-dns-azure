@@ -81,6 +81,18 @@ At least 1 zone mapping is required.
    dns_azure_zone1 = example.com:/subscriptions/c135abce-d87d-48df-936c-15596c6968a5/resourceGroups/dns1
    dns_azure_zone2 = example.org:/subscriptions/99800903-fb14-4992-9aff-12eaf2744622/resourceGroups/dns2
 
+.. code-block:: ini
+   :name: certbot_azure_cli.ini
+   :caption: Example config file using Azure CLI credentials:
+
+   dns_azure_use_cli_credentials = true
+
+   dns_azure_environment = "AzurePublicCloud"
+
+   dns_azure_zone1 = example.com:/subscriptions/c135abce-d87d-48df-936c-15596c6968a5/resourceGroups/dns1
+   dns_azure_zone2 = example.org:/subscriptions/99800903-fb14-4992-9aff-12eaf2744622/resourceGroups/dns2
+
+
 The path to this file can be provided interactively or using the
 ``--dns-azure-config`` command-line argument. Certbot records the path
 to this file for use during renewal, but does not store the file's contents.
@@ -193,7 +205,7 @@ snippet like:
     dns_azure_zone1 = test.foo.com:/subscriptions/c135abce-d87d-48df-936c-15596c6968a/resourceGroups/dns1/providers/Microsoft.Network/dnszones/foo.com/TXT/_acme-validation.test
 
 This will override the zone to foo.com (which ``test`` is already in) and the validation record (though it's overridden to the same thing) but now
-it wont delete said validation record.
+it will not delete said validation record.
 
 
 Generic Certbot Examples
