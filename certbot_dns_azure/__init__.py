@@ -63,7 +63,7 @@ At least 1 zone mapping is required.
 
 .. code-block:: ini
    :name: certbot_azure_user_msi.ini
-   :caption: Example config file using used assigned MSI:
+   :caption: Example config file using user assigned MSI:
 
    dns_azure_msi_client_id = 912ce44a-0156-4669-ae22-c16a17d34ca5
 
