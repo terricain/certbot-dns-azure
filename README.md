@@ -1,6 +1,6 @@
 # certbot-dns-azure
 
-[![Tests](https://github.com/binkhq/certbot-dns-azure/workflows/Release/badge.svg)](https://github.com/binkhq/certbot-dns-azure/actions)
+[![Tests](https://github.com/terrycain/certbot-dns-azure/workflows/Release/badge.svg)](https://github.com/terrycain/certbot-dns-azure/actions)
 [![Python Version](https://img.shields.io/pypi/pyversions/certbot-dns-azure)](https://pypi.org/project/certbot-dns-azure/)
 [![PyPi Status](https://img.shields.io/pypi/status/certbot-dns-azure)](https://pypi.org/project/certbot-dns-azure/)
 [![Version](https://img.shields.io/pypi/v/certbot-dns-azure)](https://pypi.org/project/certbot-dns-azure/)
