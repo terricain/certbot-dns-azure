@@ -1,7 +1,7 @@
 
 name: certbot-dns-azure
 summary: Azure DNS Authenticator plugin for Certbot
-version: '2.3.0'
+version: '2.4.0'
 description: A certbot dns plugin to obtain certificates using Azure DNS. For information on how to set up, go to the GitHub page.
 website: https://github.com/terrycain/certbot-dns-azure
 license: Apache-2.0
