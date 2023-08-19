@@ -7,7 +7,7 @@ from azure.mgmt.dns import DnsManagementClient
 from azure.mgmt.dns.models import RecordSet, TxtRecord
 from azure.core.exceptions import HttpResponseError
 from azure.core.utils import CaseInsensitiveDict
-from azure.identity import ClientSecretCredential, ManagedIdentityCredential, CertificateCredential, AzureCliCredential
+from azure.identity import ClientSecretCredential, ManagedIdentityCredential, CertificateCredential, AzureCliCredential, WorkloadIdentityCredential
 
 from certbot import errors
 from certbot.plugins import dns_common
@@ -74,12 +74,14 @@ class Authenticator(dns_common.DNSAuthenticator):
 
         use_azure_cli_creds = credentials.conf('use_cli_credentials')
 
-        if not any((has_sp, msi_system_assigned, msi_client_id, use_azure_cli_creds)):
+        use_workload_identity_creds = credentials.conf('use_workload_identity_credentials')
+
+        if not any((has_sp, msi_system_assigned, msi_client_id, use_azure_cli_creds, use_workload_identity_creds)):
             raise errors.PluginError('{}: No authentication methods have been '
                                      'configured for Azure DNS. Either configure '
                                      'a service principal, system/user assigned '
                                      'managed identity or configure the use of '
-                                     'azure cli credentials'.format(credentials.confobj.filename))
+                                     'azure cli or workload identity credentials'.format(credentials.confobj.filename))
 
         has_zone_mapping = any((key for key in credentials.confobj.keys() if 'azure_zone' in key))
 
@@ -130,18 +132,21 @@ class Authenticator(dns_common.DNSAuthenticator):
         tenant_id = valid_creds.conf('tenant_id')
         msi_client_id = valid_creds.conf('msi_client_id')
         use_azure_cli_creds = valid_creds.conf('use_cli_credentials')
+        use_workload_identity_creds = valid_creds.conf('use_workload_identity_credentials')
 
         self.credential = self._get_azure_credentials(
-            sp_client_id, sp_client_secret, sp_certificate_path, tenant_id, msi_client_id, use_azure_cli_creds, self._aad_endpoint
+            sp_client_id, sp_client_secret, sp_certificate_path, tenant_id, msi_client_id, use_azure_cli_creds, use_workload_identity_creds, self._aad_endpoint
         )
 
     @staticmethod
     def _get_azure_credentials(client_id=None, client_secret=None, certificate_path=None, tenant_id=None, msi_client_id=None,
-                               use_azure_cli_creds=None, aad_endpoint=None):
+                               use_azure_cli_creds=None, use_workload_identity_creds=None, aad_endpoint=None):
         has_sp = all((client_id, client_secret, tenant_id))
         has_sp_cert = all((client_id, certificate_path, tenant_id))
-        if use_azure_cli_creds:
+        if use_azure_cli_creds:  # TODO move to DefaultAzureCredential
             return AzureCliCredential(tenant_id=tenant_id)
+        elif use_workload_identity_creds:
+            return WorkloadIdentityCredential(tenant_id=tenant_id)
         elif has_sp:
             return ClientSecretCredential(
                 client_id=client_id,

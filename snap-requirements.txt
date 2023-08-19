@@ -1,4 +1,5 @@
-azure-identity>=1.11.0
+azure-identity>=1.13.0
 azure-mgmt-dns>=8.0.0
+azure-core>=1.25.0
 setuptools>=41.6.0
 certbot>=2.0,<3.0

@@ -1,13 +1,14 @@
 from setuptools import find_packages
 from setuptools import setup
 
-version = '2.3.0'
+version = '2.4.0'
 
 # azure-mgmt-dns is still the old style SDK, so will change dramatically
 # when they refactor, most notably the credential parts
 install_requires = [
-    'azure-identity>=1.11.0',
+    'azure-identity>=1.13.0',
     'azure-mgmt-dns>=8.0.0',
+    'azure-core>=1.25.0',
     'setuptools>=41.6.0',
     'certbot>=2.0,<3.0'
 ]
