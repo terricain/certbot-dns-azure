@@ -1,5 +1,7 @@
 """DNS Authenticator for Azure DNS."""
 import logging
+import time
+import random
 from os import getenv
 from typing import Dict, Tuple
 
@@ -219,18 +221,20 @@ class Authenticator(dns_common.DNSAuthenticator):
             return '@'
         return fqdn.replace(domain, '').strip('.')
 
-    def _perform(self, domain, validation_name, validation):
+    def _perform(self, domain, validation_name, validation, retry_attempt=0):
         azure_domain, subscription_id, resource_group_name, validation_name, _ = self._get_ids_for_domain(domain, validation_name)
         client = self._get_azure_client(subscription_id)
 
         # Check to see if there are any existing TXT validation record values
         txt_value = {validation}
+        etag = None
         try:
             existing_rr = client.record_sets.get(
                 resource_group_name=resource_group_name,
                 zone_name=azure_domain,
                 relative_record_set_name=validation_name,
                 record_type='TXT')
+            etag = existing_rr.etag
             for record in existing_rr.txt_records:
                 for value in record.value:
                     if value == '-':
@@ -247,13 +251,25 @@ class Authenticator(dns_common.DNSAuthenticator):
                 zone_name=azure_domain,
                 relative_record_set_name=validation_name,
                 record_type='TXT',
+                if_match=etag,
                 parameters=RecordSet(ttl=self.ttl, txt_records=[TxtRecord(value=[v]) for v in txt_value])
             )
         except HttpResponseError as err:
-            raise errors.PluginError('Failed to add TXT record to domain '
-                                     '{}, error: {}'.format(domain, err))
+            if err.status_code == 412:
+                # There is some parallel access on this record, sleep a random amount and try again.
+                if retry_attempt > 10:
+                    raise errors.PluginError('Failed to add TXT record for domain {}, max retries due to concurrent access exceeded'
+                                             ', error: {}'.format(domain, err))
+                sleep_secs = random.randint(1, 10)
+                retry_attempt += 1
+                logger.warning("Concurrent access to record {}, sleeping {} seconds, retry attempt: {}".format(domain, sleep_secs, retry_attempt))
+                time.sleep(sleep_secs)
+                self._perform(domain, validation_name, validation, retry_attempt)
+            else:
+                raise errors.PluginError('Failed to add TXT record to domain '
+                                         '{}, error: {}'.format(domain, err))
 
-    def _cleanup(self, domain, validation_name, validation):
+    def _cleanup(self, domain, validation_name, validation, retry_attempt=0):
         if self.credential is None:
             self._setup_credentials()
 
@@ -261,11 +277,13 @@ class Authenticator(dns_common.DNSAuthenticator):
         client = self._get_azure_client(subscription_id)
 
         txt_value = set()
+        etag = None
         try:
             existing_rr = client.record_sets.get(resource_group_name=resource_group_name,
                                                  zone_name=azure_domain,
                                                  relative_record_set_name=validation_name,
                                                  record_type='TXT')
+            etag = existing_rr.etag
             for record in existing_rr.txt_records:
                 for value in record.value:
                     txt_value.add(value)
@@ -283,6 +301,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                     zone_name=azure_domain,
                     relative_record_set_name=validation_name,
                     record_type='TXT',
+                    if_match=etag,
                     parameters=RecordSet(ttl=self.ttl,
                                          txt_records=[TxtRecord(value=[v]) for v in txt_value])
                 )
@@ -292,6 +311,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                         resource_group_name=resource_group_name,
                         zone_name=azure_domain,
                         relative_record_set_name=validation_name,
+                        if_match=etag,
                         record_type='TXT'
                     )
                 else:
@@ -299,12 +319,23 @@ class Authenticator(dns_common.DNSAuthenticator):
                         resource_group_name=resource_group_name,
                         zone_name=azure_domain,
                         relative_record_set_name=validation_name,
+                        if_match=etag,
                         record_type='TXT',
                         parameters=RecordSet(ttl=self.ttl, txt_records=[TxtRecord(value=['-'])])
                     )
         except HttpResponseError as err:
-            if err.status_code != 404:  # Ignore RR not found
-                raise errors.PluginError('Failed to remove TXT record for domain '
+            if err.status_code == 412:
+                # There is some parallel access on this record, sleep a random amount and try again.
+                if retry_attempt > 10:
+                    raise errors.PluginError('Failed to remove/empty TXT record for domain {}, max retries due to concurrent access exceeded'
+                                             ', error: {}'.format(domain, err))
+                sleep_secs = random.randint(1, 10)
+                retry_attempt += 1
+                logger.warning("Concurrent access to record {}, sleeping {} seconds, retry attempt: {}".format(domain, sleep_secs, retry_attempt))
+                time.sleep(sleep_secs)
+                self._cleanup(domain, validation_name, validation, retry_attempt)
+            elif err.status_code != 404:  # Ignore RR not found
+                raise errors.PluginError('Failed to remove/empty TXT record for domain '
                                          '{}, error: {}'.format(domain, err))
 
     def _get_azure_client(self, subscription_id):
