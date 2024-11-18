@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-version = '2.5.0'
+version = '2.6.0'
 
 # azure-mgmt-dns is still the old style SDK, so will change dramatically
 # when they refactor, most notably the credential parts
@@ -10,7 +10,7 @@ install_requires = [
     'azure-mgmt-dns>=8.0.0',
     'azure-core>=1.25.0',
     'setuptools>=41.6.0',
-    'certbot>=2.0,<3.0'
+    'certbot>=3.0'
 ]
 
 with open("README.md") as f:
@@ -31,7 +31,7 @@ setup(
     author="Terry Cain",
     author_email='opensource@bink.com',
     license='Apache License 2.0',
-    python_requires='>=3.6',
+    python_requires='>=3.11',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Plugins',
