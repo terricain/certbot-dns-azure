@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-version = '2.6.0'
+version = '2.6.1'
 
 # azure-mgmt-dns is still the old style SDK, so will change dramatically
 # when they refactor, most notably the credential parts
@@ -27,9 +27,9 @@ setup(
     description="Azure DNS Authenticator plugin for Certbot",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url='https://github.com/binkhq/certbot-dns-azure',
-    author="Terry Cain",
-    author_email='opensource@bink.com',
+    url='https://github.com/terricain/certbot-dns-azure',
+    author="Terri Cain",
+    author_email='terri@dolphincorp.co.uk',
     license='Apache License 2.0',
     python_requires='>=3.6',
     classifiers=[
@@ -40,11 +40,8 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',
