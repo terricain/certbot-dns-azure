@@ -1,4 +1,3 @@
-
 name: certbot-dns-azure
 summary: Azure DNS Authenticator plugin for Certbot
 version: '2.6.1'
