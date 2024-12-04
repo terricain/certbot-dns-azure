@@ -13,19 +13,20 @@ adopt-info: certbot-dns-azure
 environment:
   PYTHONPATH: "$SNAP/lib/python3.12/site-packages:${PYTHONPATH}"
 
-architectures:
-  - build-on: arm64
-  - build-on: amd64
+platforms:
+  arm64:
+  amd64:
+
 parts:
   certbot-dns-azure:
     plugin: python
     source: .
     override-pull: |
-        snapcraftctl pull
-        snapcraftctl set-version `grep ^version $SNAPCRAFT_PART_SRC/setup.py | cut -f2 -d= | tr -d "'[:space:]"`
+        craftctl default
+        craftctl set version=`grep ^version $SNAPCRAFT_PART_SRC/setup.py | cut -f2 -d= | tr -d "'[:space:]"`
     build-environment:
       - SNAP_BUILD: "True"
-    requirements:
+    python-requirements:
       - snap-requirements.txt
     build-packages:
       - gcc
@@ -39,7 +40,7 @@ parts:
     source: .
     stage: [setup.py, certbot-shared]
     override-pull: |
-        snapcraftctl pull
+        craftctl default
         mkdir -p $SNAPCRAFT_PART_SRC/certbot-shared
 slots:
   certbot:

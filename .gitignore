@@ -67,3 +67,4 @@ certbot-dns*/certbot-dns*_arm*.txt
 /certbot_arm*.txt
 certbot-dns*/snap
 certbot-dns-azure_*.txt
+snapcraft-certbot-dns-azure-*.txt
